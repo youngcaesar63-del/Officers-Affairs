@@ -1,0 +1,130 @@
+
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
+import { Eye, EyeOff, User, Lock, Loader2 } from 'lucide-react';
+import { login } from '@/lib/server-actions';
+
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [username, setUsername] = useState('manager');
+  const [password, setPassword] = useState('manager123');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+        const user = await login(username, password);
+        
+        if (user) {
+            sessionStorage.setItem('user', JSON.stringify(user));
+
+            toast({
+                title: 'تم تسجيل الدخول بنجاح',
+                description: `مرحباً بعودتك، ${user.name}!`,
+            });
+            router.push('/dashboard/welcome');
+        } else {
+             toast({
+                title: 'خطأ في تسجيل الدخول',
+                description: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
+                variant: 'destructive',
+            });
+        }
+    } catch (error: any) {
+        console.error(error);
+        toast({
+            title: 'خطأ في تسجيل الدخول',
+            description: error.message || 'حدث خطأ غير متوقع.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-muted/40">
+      <Card className="w-full max-w-md shadow-2xl animate-in fade-in duration-700">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-fit mb-4">
+             <Image 
+                src="https://i.postimg.cc/JhCP857V/1-removebg-preview.png" 
+                alt="شعار هيئة الاستخبارات العسكرية" 
+                width={120} 
+                height={120} 
+                data-ai-hint="military emblem"
+                priority
+                className="drop-shadow-lg"
+              />
+          </div>
+          <div>
+            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-primary">رئاسة هيئة الأركان</h1>
+            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-wider">هيئة الاستخبارات العسكرية</h2>
+          </div>
+          <CardDescription className="pt-4">الرجاء تسجيل الدخول للمتابعة</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-right">اسم المستخدم</Label>
+              <div className="relative">
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                 <Input
+                  id="username"
+                  type="text"
+                  placeholder="ادخل اسم المستخدم"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+               <Label htmlFor="password" className="text-right">كلمة المرور</Label>
+               <div className="relative">
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="ادخل كلمة المرور"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                  onClick={() => setShowPassword(prev => !prev)}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  <span className="sr-only">{showPassword ? 'إخفاء' : 'إظهار'} كلمة المرور</span>
+                </Button>
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading || !username || !password}>
+              {isLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? 'جاري التحقق...' : 'تسجيل الدخول'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
